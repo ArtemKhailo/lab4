@@ -1,4 +1,5 @@
 from app.services.csv_reader import CsvWeatherReader
+from app.services.go_outside_service import is_safe_to_go_outside
 
 class ImportService:
     def __init__(self, repository, batch_size: int = 5000):
@@ -18,6 +19,8 @@ class ImportService:
         inserted =0
         batch =[]
         for row in reader.read():
+            air = row["air_quality"]
+            air["is_safe_to_go_outside"] = is_safe_to_go_outside(air["pm2_5"], air["us_epa_index"])
             batch.append(row)
             if len(batch) == self.batch_size:
                 inserted += self.repository.bulk_insert(batch)

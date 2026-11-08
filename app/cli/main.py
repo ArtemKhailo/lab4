@@ -3,6 +3,7 @@ from app.config import CSV_PATH
 from app.db import SessionLocal
 from app.repositories.weather_repository import WeatherRepository
 from app.services.import_service import ImportService
+from app.services.go_outside_service import GoOutsideService
 
 def cmd_import(args):
     service = ImportService(WeatherRepository(SessionLocal))
@@ -24,6 +25,11 @@ def cmd_stats(args):
             f"схід {w.sunrise:%H:%M} | PM2.5 {w.air_quality.pm2_5}"
         )
 
+def cmd_fill_go_outside(args):
+    service = GoOutsideService(WeatherRepository(SessionLocal))
+    counts = service.fill()
+    print(f"Так: {counts[True]}, ні: {counts[False]}, немає даних: {counts[None]}")
+
 def run():
     parser = argparse.ArgumentParser(description="Погодна БД")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -36,5 +42,9 @@ def run():
     p.add_argument("--limit", type=int, default=10)
     p.set_defaults(func=cmd_stats)
 
+    p = sub.add_parser("fill-go-outside", help="заповнити колонку 'Чи варто виходити на вулицю'")
+    p.set_defaults(func=cmd_fill_go_outside)
+
     args = parser.parse_args()
     args.func(args)
+

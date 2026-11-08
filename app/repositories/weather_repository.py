@@ -1,4 +1,4 @@
-from sqlalchemy import delete, func, select
+from sqlalchemy import delete, func, select, update
 from sqlalchemy.orm import selectinload
 from app.models import AirQuality, Weather
 
@@ -33,7 +33,7 @@ class WeatherRepository:
                 .limit(limit)
             )
             return list(session.scalars(query))
-
+    
     def summary(self) -> dict:
         with self._session_factory() as session:
             total, countries, first, last = session.execute(
@@ -45,4 +45,24 @@ class WeatherRepository:
                 )
             ).one()
         return {"total": total, "countries": countries, "first": first, "last": last}
+
+    def air_quality_batches(self, batch_size: int):
+        last_id = 0
+        while True:
+            with self._session_factory() as session:
+                rows = session.execute(
+                    select(AirQuality.id, AirQuality.pm2_5, AirQuality.us_epa_index)
+                    .where(AirQuality.id > last_id)
+                    .order_by(AirQuality.id)
+                    .limit(batch_size)
+                ).all()
+            if not rows:
+                break
+            yield rows
+            last_id = rows[-1].id
+
+    def update_go_outside(self, values: list[dict]) -> None:
+        with self._session_factory() as session:
+            session.execute(update(AirQuality), values)
+            session.commit()
 

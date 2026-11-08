@@ -1,4 +1,4 @@
-from sqlalchemy import Double, ForeignKey, Integer
+from sqlalchemy import Boolean, Double, ForeignKey, Integer
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.models.base import Base
 
@@ -17,5 +17,6 @@ class AirQuality(Base):
     pm10: Mapped[float | None] = mapped_column(Double)
     us_epa_index: Mapped[int | None] = mapped_column(Integer)
     gb_defra_index: Mapped[int | None] = mapped_column(Integer)
+    is_safe_to_go_outside: Mapped[bool | None] = mapped_column(Boolean)
 
     weather: Mapped["Weather"] = relationship(back_populates="air_quality")
