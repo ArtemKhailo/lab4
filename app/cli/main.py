@@ -21,7 +21,7 @@ def cmd_stats(args):
         print(
             f"{w.id:>3} | {w.country:<12.12} | {w.last_updated:%Y-%m-%d %H:%M} | "
             f"вітер {w.wind_kph} км/год {w.wind_degree}° {w.wind_direction.value} | "
-            f"схід {w.sunrise:%H:%M} | PM2.5 {w.air_quality_pm2_5}"
+            f"схід {w.sunrise:%H:%M} | PM2.5 {w.air_quality.pm2_5}"
         )
 
 def run():

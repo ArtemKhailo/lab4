@@ -1,6 +1,6 @@
 from datetime import datetime, time
 from sqlalchemy import DateTime, Double, Enum, Index, Integer, String, Time
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.models.base import Base
 from app.models.enums import WindDirection
 
@@ -26,12 +26,5 @@ class Weather(Base):
     location_name: Mapped[str]= mapped_column(String(100), nullable=False)
     temperature_celsius: Mapped[float | None]= mapped_column(Double)
     condition_text: Mapped[str | None]= mapped_column(String(100))
+    air_quality: Mapped["AirQuality | None"] = relationship(back_populates="weather", cascade="all, delete-orphan")
 
-    air_quality_carbon_monoxide: Mapped[float | None] = mapped_column(Double)
-    air_quality_ozone: Mapped[float | None] = mapped_column(Double)
-    air_quality_nitrogen_dioxide: Mapped[float | None] = mapped_column(Double)
-    air_quality_sulphur_dioxide: Mapped[float | None] = mapped_column(Double)
-    air_quality_pm2_5: Mapped[float | None] = mapped_column(Double)
-    air_quality_pm10: Mapped[float | None] = mapped_column(Double)
-    air_quality_us_epa_index: Mapped[int | None] = mapped_column(Integer)
-    air_quality_gb_defra_index: Mapped[int | None] = mapped_column(Integer)

@@ -63,14 +63,16 @@ def convert_row(raw: dict) -> dict | None:
         "wind_degree": to_int(raw["wind_degree"]),
         "wind_direction": to_wind_direction(raw["wind_direction"]),
         "sunrise": to_time(raw["sunrise"]),
-        "air_quality_carbon_monoxide": to_pollutant(raw["air_quality_Carbon_Monoxide"]),
-        "air_quality_ozone": to_pollutant(raw["air_quality_Ozone"]),
-        "air_quality_nitrogen_dioxide": to_pollutant(raw["air_quality_Nitrogen_dioxide"]),
-        "air_quality_sulphur_dioxide": to_pollutant(raw["air_quality_Sulphur_dioxide"]),
-        "air_quality_pm2_5": to_pollutant(raw["air_quality_PM2.5"]),
-        "air_quality_pm10": to_pollutant(raw["air_quality_PM10"]),
-        "air_quality_us_epa_index": to_int(raw["air_quality_us-epa-index"]),
-        "air_quality_gb_defra_index": to_int(raw["air_quality_gb-defra-index"]),
+        "air_quality": {
+            "carbon_monoxide": to_pollutant(raw["air_quality_Carbon_Monoxide"]),
+            "ozone": to_pollutant(raw["air_quality_Ozone"]),
+            "nitrogen_dioxide": to_pollutant(raw["air_quality_Nitrogen_dioxide"]),
+            "sulphur_dioxide": to_pollutant(raw["air_quality_Sulphur_dioxide"]),
+            "pm2_5": to_pollutant(raw["air_quality_PM2.5"]),
+            "pm10": to_pollutant(raw["air_quality_PM10"]),
+            "us_epa_index": to_int(raw["air_quality_us-epa-index"]),
+            "gb_defra_index": to_int(raw["air_quality_gb-defra-index"]),
+        },
     }
     if not row["country"] or not row["location_name"] or row["last_updated"] is None:
         return None

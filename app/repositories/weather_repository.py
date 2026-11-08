@@ -1,5 +1,6 @@
-from sqlalchemy import delete, func, insert, select
-from app.models import Weather
+from sqlalchemy import delete, func, select
+from sqlalchemy.orm import selectinload
+from app.models import AirQuality, Weather
 
 class WeatherRepository:
     def __init__(self, session_factory):
@@ -11,16 +12,27 @@ class WeatherRepository:
 
     def delete_all(self) -> None:
         with self._session_factory() as session:
+            session.execute(delete(AirQuality))
             session.execute(delete(Weather))
             session.commit()
 
     def bulk_insert(self, rows: list[dict]) -> int:
-        if not rows:
-            return 0
         with self._session_factory() as session:
-            session.execute(insert(Weather), rows)
+            for row in rows:
+                air = row.pop("air_quality")
+                session.add(Weather(**row, air_quality=AirQuality(**air)))
             session.commit()
         return len(rows)
+
+    def sample(self, limit: int = 10) -> list[Weather]:
+        with self._session_factory() as session:
+            query = (
+                select(Weather)
+                .options(selectinload(Weather.air_quality))
+                .order_by(Weather.id)
+                .limit(limit)
+            )
+            return list(session.scalars(query))
 
     def summary(self) -> dict:
         with self._session_factory() as session:
@@ -34,6 +46,3 @@ class WeatherRepository:
             ).one()
         return {"total": total, "countries": countries, "first": first, "last": last}
 
-    def sample(self, limit: int = 10) -> list[Weather]:
-        with self._session_factory() as session:
-            return list(session.scalars(select(Weather).order_by(Weather.id).limit(limit)))
