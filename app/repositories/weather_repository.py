@@ -1,6 +1,7 @@
 from sqlalchemy import delete, func, select, update
 from sqlalchemy.orm import selectinload
 from app.models import AirQuality, Weather
+from datetime import datetime
 
 class WeatherRepository:
     def __init__(self, session_factory):
@@ -65,4 +66,31 @@ class WeatherRepository:
         with self._session_factory() as session:
             session.execute(update(AirQuality), values)
             session.commit()
+
+    def countries(self) -> list[str]:
+        with self._session_factory() as session:
+            return list(session.scalars(
+                select(Weather.country).distinct().order_by(Weather.country)
+            ))
+
+    def find(self, country: str, start: datetime, end: datetime, city: str | None = None) -> list[Weather]:
+        with self._session_factory() as session:
+            query = (
+                select(Weather)
+                .options(selectinload(Weather.air_quality))
+                .where(Weather.country == country)
+                .where(Weather.last_updated >= start)
+                .where(Weather.last_updated < end)
+                .order_by(Weather.last_updated)
+            )
+            if city:
+                query = query.where(func.lower(Weather.location_name) == city.lower())
+            return list(session.scalars(query))
+
+    def date_range(self, country: str):
+        with self._session_factory() as session:
+            return session.execute(
+                select(func.min(Weather.last_updated), func.max(Weather.last_updated))
+                .where(Weather.country == country)
+            ).one()
 

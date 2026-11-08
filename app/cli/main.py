@@ -4,6 +4,7 @@ from app.db import SessionLocal
 from app.repositories.weather_repository import WeatherRepository
 from app.services.import_service import ImportService
 from app.services.go_outside_service import GoOutsideService
+from app.services.search_service import SearchError, SearchService
 
 def cmd_import(args):
     service = ImportService(WeatherRepository(SessionLocal))
@@ -30,6 +31,43 @@ def cmd_fill_go_outside(args):
     counts = service.fill()
     print(f"Так: {counts[True]}, ні: {counts[False]}, немає даних: {counts[None]}")
 
+def yes_no(value):
+    return {True: "ТАК", False: "НІ", None: "немає даних"}[value]
+
+def cmd_search(args):
+    service = SearchService(WeatherRepository(SessionLocal))
+    try:
+        country, records = service.search(args.country, args.date, args.city)
+    except SearchError as e:
+        print(e)
+        return
+
+    print(f"\n{country}, {args.date}: знайдено записів: {len(records)}")
+    for w in records:
+        a = w.air_quality
+        print("\n" + "=" * 50)
+        print(f"{w.location_name}, оновлено о {w.last_updated:%H:%M}")
+        print("=" * 50)
+        print(f"Погода:       {w.condition_text}, {w.temperature_celsius} °C")
+        print(f"Вітер:        {w.wind_kph} км/год, {w.wind_degree}°, напрямок {w.wind_direction.value}")
+        print(f"Схід сонця:   {w.sunrise:%H:%M}")
+        print("Якість повітря:")
+        print(f"  CO:         {a.carbon_monoxide} мкг/м³")
+        print(f"  O3:         {a.ozone} мкг/м³")
+        print(f"  NO2:        {a.nitrogen_dioxide} мкг/м³")
+        print(f"  SO2:        {a.sulphur_dioxide} мкг/м³")
+        print(f"  PM2.5:      {a.pm2_5} мкг/м³")
+        print(f"  PM10:       {a.pm10} мкг/м³")
+        print(f"  US EPA:     {a.us_epa_index} (1 - добре ... 6 - небезпечно)")
+        print(f"  UK DEFRA:   {a.gb_defra_index} (1 - низький ... 10 - дуже високий)")
+        print(f"Чи варто виходити на вулицю: {yes_no(a.is_safe_to_go_outside)}")
+
+def cmd_countries(args):
+    repo = WeatherRepository(SessionLocal)
+    names = repo.countries()
+    print(f"Країн у базі: {len(names)}\n")
+    print(", ".join(names))
+
 def run():
     parser = argparse.ArgumentParser(description="Погодна БД")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -44,6 +82,15 @@ def run():
 
     p = sub.add_parser("fill-go-outside", help="заповнити колонку 'Чи варто виходити на вулицю'")
     p.set_defaults(func=cmd_fill_go_outside)
+
+    p = sub.add_parser("search", help="погода за країною і датою")
+    p.add_argument("country", help="назва країни англійською, напр. Ukraine")
+    p.add_argument("date", help="дата у форматі РРРР-ММ-ДД")
+    p.add_argument("--city", help="місто (необов'язково)")
+    p.set_defaults(func=cmd_search)
+
+    p = sub.add_parser("countries", help="список країн у базі")
+    p.set_defaults(func=cmd_countries)
 
     args = parser.parse_args()
     args.func(args)
