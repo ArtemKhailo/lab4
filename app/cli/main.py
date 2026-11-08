@@ -5,6 +5,9 @@ from app.repositories.weather_repository import WeatherRepository
 from app.services.import_service import ImportService
 from app.services.go_outside_service import GoOutsideService
 from app.services.search_service import SearchError, SearchService
+from app.config import MYSQL_URL, POSTGRES_URL
+from app.repositories.copy_repository import TableCopyRepository
+from app.services.transfer_service import TransferError, TransferService
 
 def cmd_import(args):
     service = ImportService(WeatherRepository(SessionLocal))
@@ -68,6 +71,17 @@ def cmd_countries(args):
     print(f"Країн у базі: {len(names)}\n")
     print(", ".join(names))
 
+def cmd_copy_to_mysql(args):
+    service = TransferService(TableCopyRepository(POSTGRES_URL), TableCopyRepository(MYSQL_URL))
+    try:
+        result = service.transfer()
+    except TransferError as e:
+        print(e)
+        return
+    for name, (src, dst) in result.items():
+        status = "OK" if src == dst else "НЕ ЗБІГАЄТЬСЯ"
+        print(f"{name}: PostgreSQL {src} -> MySQL {dst}  {status}")
+
 def run():
     parser = argparse.ArgumentParser(description="Погодна БД")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -91,6 +105,9 @@ def run():
 
     p = sub.add_parser("countries", help="список країн у базі")
     p.set_defaults(func=cmd_countries)
+
+    p = sub.add_parser("copy-to-mysql", help="перенести дані з PostgreSQL у MySQL")
+    p.set_defaults(func=cmd_copy_to_mysql)
 
     args = parser.parse_args()
     args.func(args)
